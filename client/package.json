@@ -2,6 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "types": "types/globalTypes.ts",
   "dependencies": {
     "apollo-boost": "^0.3.1",
     "graphql": "^14.2.1",
@@ -18,7 +19,7 @@
     "test": "react-scripts-ts test --env=jsdom",
     "eject": "react-scripts-ts eject",
     "generate": "apollo client:codegen --includes=./src/queries/**/*.ts --target=typescript --addTypename --tagName=gql types",
-    "typegen": "npm run introspect && npm run generate"
+    "typegen": "npm run generate"
   },
   "devDependencies": {
     "@types/jest": "^24.0.11",

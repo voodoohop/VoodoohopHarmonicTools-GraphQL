@@ -1,5 +1,4 @@
 const openkeySequence = [
-
     "B",
     "F#",
     "C#",
