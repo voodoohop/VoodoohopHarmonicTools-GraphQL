@@ -47,7 +47,7 @@ export default function extractRelevantMetadata({native, common}:IAudioMetadata)
         album,
         title,
         rawFields,
-        bpm: bpm.toFixed(2),
+        bpm,
         comment: comment instanceof Array ? comment.join(" ") : comment,
         musicalKey: normalizedKey,
         genre: stringify(genre),

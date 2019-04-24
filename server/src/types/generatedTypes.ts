@@ -30,7 +30,7 @@ export type Metadata = {
   title?: Maybe<Scalars["String"]>;
   artist?: Maybe<Scalars["String"]>;
   musicalKey?: Maybe<Scalars["String"]>;
-  bpm?: Maybe<Scalars["String"]>;
+  bpm?: Maybe<Scalars["Float"]>;
   album?: Maybe<Scalars["String"]>;
   comment?: Maybe<Scalars["String"]>;
   genre?: Maybe<Scalars["String"]>;
@@ -191,7 +191,7 @@ export type MetadataResolvers<
     ContextType,
     MetadataMusicalKeyArgs
   >;
-  bpm?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  bpm?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
   album?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   comment?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   genre?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;

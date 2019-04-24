@@ -32,7 +32,7 @@ const typeDefs = gql`
         title: String
         artist: String
         musicalKey(notation:ChordNotation = TRADITIONAL): String
-        bpm: String
+        bpm: Float
         album: String
         comment: String
         genre: String
