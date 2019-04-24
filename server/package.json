@@ -14,10 +14,12 @@
   "dependencies": {
     "apollo-errors": "^1.9.0",
     "apollo-server": "^2.4.8",
+    "await-sleep": "0.0.1",
     "dataloader": "^1.4.0",
     "graphql": "^14.2.1",
     "music-metadata": "^3.6.0",
     "node-osc": "https://github.com/voodoohop/node-osc/tarball/master",
+    "strict-event-emitter-types": "^2.0.0",
     "virtualenv": "^0.3.1"
   },
   "devDependencies": {

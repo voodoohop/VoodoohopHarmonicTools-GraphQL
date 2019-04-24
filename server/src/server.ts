@@ -12,7 +12,7 @@ const HELLO_ADDED = 'HELLO_ADDED';
 import {getKeyFormatter} from "./keyformatter";
 import extractRelevantMetadata from './extractRelevantMetadata';
 
-import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile} from "./types/generatedTypes";
+import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers} from "./@types/generatedTypes";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -66,7 +66,7 @@ const audioMetadataLoader = new DataLoader<string, IAudioMetadata>(function(path
 
 const queryResolvers:QueryResolvers = {
     hello: () => 'Hello world!',  
-    audioFile: async (_:any, {path} :{path:string}) => {
+    audioFile: async (_:any, {path} :{path:string}):Promise<AudioFile> => {
         console.log("returning metadata for path", path);
         const metadata = extractRelevantMetadata(await audioMetadataLoader.load(path));
         console.log("returning fields",metadata);   
@@ -89,15 +89,16 @@ const metadataResolvers:MetadataResolvers = {
 
 
 
+const subscriptionResolvers:SubscriptionResolvers = {
+    helloAdded: { subscribe: () => pubsub.asyncIterator([HELLO_ADDED]) }
+};
 const resolvers:Resolvers= {
   Query: queryResolvers,
   Metadata: metadataResolvers,
-  Subscription: {
-      helloAdded: {subscribe: () => pubsub.asyncIterator([HELLO_ADDED])}
-  }
+  Subscription: subscriptionResolvers
 };
 
-const server = new ApolloServer({ typeDefs, resolvers });
+const server = new ApolloServer({ typeDefs, resolvers });   
 server.listen({port: parseInt(process.env.PORT || "4000")}).then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`)
 });
@@ -119,4 +120,18 @@ var env = virtualenv(packagePath);
 var child = env.spawnPython([resolve("./src/python/analyzeKey.py")]);
 child.stderr.pipe(stderr);
 child.stdout.pipe(stdout);
-console.log(child);
+// console.log(child);
+
+import osc = require("node-osc");
+
+import sleep = require('await-sleep')   ;
+
+async function startOscTest() {
+    const oscServer = new osc.Server(2000,"0.0.0.0");
+    oscServer.on("message", (message, origin) => console.log("message",message,"origin",origin));
+    await sleep(1000);
+    const oscClient = new osc.Client("localhost",2000);
+    oscClient.send("/bla",200,3.5);
+}
+
+startOscTest()

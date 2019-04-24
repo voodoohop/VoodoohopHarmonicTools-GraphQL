@@ -1,7 +1,7 @@
 import { IAudioMetadata } from "music-metadata/lib";
 
 import {doNormalization} from "./keyformatter";
-import { Metadata } from "./types/generatedTypes";
+import { Metadata } from "./@types/generatedTypes";
 
 function stringify(o) {
     return o instanceof Array ? o.join(",") : (o !== Object(o) ? o : JSON.stringify(o))   
