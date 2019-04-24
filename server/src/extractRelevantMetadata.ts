@@ -19,14 +19,23 @@ export default function extractRelevantMetadata({native, common}:IAudioMetadata)
 
     const nativeDataTypesAvailable = Object.keys(native);
     // const empty:[RawTagFormat]=[];
-    const nativeFields = nativeDataTypesAvailable.reduce<[ConvertedTagFormat]>((data:[ConvertedTagFormat], nativeKey:string):[ConvertedTagFormat] => [...data, ...native[nativeKey].map(transformNative) ], []]);
+
+    function concatTags(data:ConvertedTagFormat[], nativeKey:string):ConvertedTagFormat[] {
+         return  [...native[nativeKey].map(transformNative), ...data]
+    }
+    const nativeFields = nativeDataTypesAvailable.reduce<ConvertedTagFormat[]>(concatTags, []);
  
     const rawFields = nativeFields.concat(Object.keys(common).map(key => ({key, value: stringify(common[key])})));
 
-    const {artist, album, title, comment, bpm, key, genre, energy} =  common;  
+    const findRawField = (searchKey:string):string => (rawFields.find(({key}) => (key === searchKey))||{value:undefined}).value
+    const {artist, album, title, comment, bpm, genre } =  common;  
     
-    const transformedEnergy = parseFloat((rawFields.find(({key}) => (key === 'TXXX:EnergyLevel'))||{}).value);
+    const transformedEnergy = parseFloat(findRawField('TXXX:EnergyLevel'));
+
+    const key:string = findRawField("TKEY") || findRawField("key");
    
+
+    
     const metadata =  {
         artist,
         album,

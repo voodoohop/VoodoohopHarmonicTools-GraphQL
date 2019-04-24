@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon -w . --experimental-modules  src/server.js",
+    "start": "nodemon --watch 'src/**/*.ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node' src/server.ts",
     "generate": "./gql_codegen/generate-gql.sh",
     "postinstall": "virtualenv-postinstall"
   },
