@@ -1,19 +1,16 @@
-import apolloServer from 'apollo-server';
+import { ApolloServer, gql, PubSub }  from 'apollo-server';
 
-const { ApolloServer, gql, PubSub } = apolloServer;
+import {parseFile as parseAudioFileMetadata, IAudioMetadata} from "music-metadata"
 
-import musicMetadata from "music-metadata"
 
-const {parseFile: parseAudioFileMetadata} = musicMetadata;
-
-import DataLoader from 'dataloader';
+import DataLoader = require('dataloader');
 
 const pubsub = new PubSub();
 
 const HELLO_ADDED = 'HELLO_ADDED';
 
-import {getKeyFormatter} from "./keyformatter.js";
-import extractRelevantMetadata from './extractRelevantMetadata.js';
+import {getKeyFormatter} from "./keyformatter";
+import extractRelevantMetadata from './extractRelevantMetadata';
 
 
 // Construct a schema, using GraphQL schema language
@@ -58,8 +55,10 @@ const typeDefs = gql`
     }
 `;
 
-const audioMetadataLoader = new DataLoader(path => {
-    console.log("I got", path);
+
+
+const audioMetadataLoader = new DataLoader<string, IAudioMetadata>(function(path:string[]):Promise<IAudioMetadata[]> {
+    console.log("I got", path); 
     return Promise.all(path.map(path => parseAudioFileMetadata(path, {native: true})));
 }, {batch:false});
 // Prove resolver functions for your schema fields
@@ -101,7 +100,7 @@ setInterval(() =>{
 
 
 
-import virtualenv from "virtualenv";
+import virtualenv =require("virtualenv");
 import {resolve} from "path";
 
 import {stderr, stdout} from "process"

@@ -1,16 +1,25 @@
+import { IAudioMetadata } from "music-metadata/lib";
 
 
 function stringify(o) {
     return o instanceof Array ? o.join(",") : (o !== Object(o) ? o : JSON.stringify(o))   
 }
 
-const transformNative = ({id,value}) => ({key:id,value: stringify(value)});        
+interface RawTagFormat {
+    id:string,
+    value:string
+}
+interface ConvertedTagFormat {
+    key:string,
+    value:string
+}
+const transformNative = ({id,value}:RawTagFormat):ConvertedTagFormat => ({key:id,value: stringify(value)});        
  
-export default function extractRelevantMetadata({native, common}) {
+export default function extractRelevantMetadata({native, common}:IAudioMetadata) {
 
     const nativeDataTypesAvailable = Object.keys(native);
-     
-    const nativeFields = nativeDataTypesAvailable.reduce((data, nativeKey) => [...data, ...native[nativeKey].map(transformNative) ], []);
+    // const empty:[RawTagFormat]=[];
+    const nativeFields = nativeDataTypesAvailable.reduce<[ConvertedTagFormat]>((data:[ConvertedTagFormat], nativeKey:string):[ConvertedTagFormat] => [...data, ...native[nativeKey].map(transformNative) ], []]);
  
     const rawFields = nativeFields.concat(Object.keys(common).map(key => ({key, value: stringify(common[key])})));
 

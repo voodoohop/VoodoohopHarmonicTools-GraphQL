@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon -w . --experimental-modules  src/server.js",
+    "generate": "./gql_codegen/generate-gql.sh",
     "postinstall": "virtualenv-postinstall"
   },
   "author": "",
@@ -21,7 +22,9 @@
   },
   "devDependencies": {
     "graphql-code-generator": "^0.18.1",
-    "nodemon": "^1.18.11"
+    "nodemon": "^1.18.11",
+    "ts-node": "^8.1.0",
+    "typescript": "^3.4.5"
   },
   "type": "module"
 }
