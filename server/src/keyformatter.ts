@@ -192,7 +192,7 @@ const openkeySequence = [
   
 
 
-const majorMinorFormat = (m) => {
+const majorMinorFormat = (m:string):string => {
     if (!m)
       return "";
     if (m.slice(0, 3) === "maj")
@@ -223,7 +223,7 @@ const normalize = (keyString, keyRegEx, camelotRegEx, openKeyRegEx) =>
         (openKeyRegEx.test(keyString) ? openKeyToKey[keyString.toLowerCase().match(openKeyRegEx)[1]]
           : undefined));
 
-const doNormalization = (possibleKeyString) => normalize(possibleKeyString, keyRegEx, camelotRegEx, openKeyRegEx);
+export const doNormalization = (possibleKeyString:string):string => normalize(possibleKeyString, keyRegEx, camelotRegEx, openKeyRegEx);
 
 // const doNormalization_filename = (possibleKeyString) => normalize(possibleKeyString, keyRegEx_filename, camelotRegEx_filename, openKeyRegEx_filename);
 

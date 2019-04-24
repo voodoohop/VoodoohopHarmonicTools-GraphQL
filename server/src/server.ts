@@ -12,6 +12,7 @@ const HELLO_ADDED = 'HELLO_ADDED';
 import {getKeyFormatter} from "./keyformatter";
 import extractRelevantMetadata from './extractRelevantMetadata';
 
+import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile} from "./types/generatedTypes";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -62,17 +63,19 @@ const audioMetadataLoader = new DataLoader<string, IAudioMetadata>(function(path
     return Promise.all(path.map(path => parseAudioFileMetadata(path, {native: true})));
 }, {batch:false});
 // Prove resolver functions for your schema fields
-const resolvers = {
-  Query: {
+
+const queryResolvers:QueryResolvers = {
     hello: () => 'Hello world!',  
-    audioFile: async (_root, {path}) => {
+    audioFile: async (_:any, {path} :{path:string}) => {
         console.log("returning metadata for path", path);
         const metadata = extractRelevantMetadata(await audioMetadataLoader.load(path));
-        console.log("returning fields",metadata); 
-        return {path, metadata}
+        console.log("returning fields",metadata);   
+        const result:AudioFile = {path, metadata};   
+        return result;
     },
-  },
-  Metadata: {
+  }
+
+const metadataResolvers:MetadataResolvers = {
     field: ({rawFields},{key: searchKey}) => {     
         // console.log("getting subdata",fields, key);
         const selectedField = rawFields.find(({key}) => key === searchKey )
@@ -80,16 +83,22 @@ const resolvers = {
     },
     musicalKey: (obj, {notation}) => {
         console.log("args", obj, notation);
-        return getKeyFormatter(notation)(obj.key);                 
+        return getKeyFormatter(notation)(obj.musicalKey);                 
     }
-  },
+  };
+
+
+
+const resolvers:Resolvers= {
+  Query: queryResolvers,
+  Metadata: metadataResolvers,
   Subscription: {
       helloAdded: {subscribe: () => pubsub.asyncIterator([HELLO_ADDED])}
   }
 };
 
 const server = new ApolloServer({ typeDefs, resolvers });
-server.listen().then(({ url }) => {
+server.listen({port: parseInt(process.env.PORT || "4000")}).then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`)
 });
 
@@ -100,7 +109,7 @@ setInterval(() =>{
 
 
 
-import virtualenv =require("virtualenv");
+const virtualenv:any = require("virtualenv");
 import {resolve} from "path";
 
 import {stderr, stdout} from "process"

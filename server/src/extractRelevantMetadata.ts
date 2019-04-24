@@ -1,5 +1,7 @@
 import { IAudioMetadata } from "music-metadata/lib";
 
+import {doNormalization} from "./keyformatter";
+import { Metadata } from "./types/generatedTypes";
 
 function stringify(o) {
     return o instanceof Array ? o.join(",") : (o !== Object(o) ? o : JSON.stringify(o))   
@@ -15,7 +17,7 @@ interface ConvertedTagFormat {
 }
 const transformNative = ({id,value}:RawTagFormat):ConvertedTagFormat => ({key:id,value: stringify(value)});        
  
-export default function extractRelevantMetadata({native, common}:IAudioMetadata) {
+export default function extractRelevantMetadata({native, common}:IAudioMetadata):Metadata {
 
     const nativeDataTypesAvailable = Object.keys(native);
     // const empty:[RawTagFormat]=[];
@@ -30,20 +32,24 @@ export default function extractRelevantMetadata({native, common}:IAudioMetadata)
     const findRawField = (searchKey:string):string => (rawFields.find(({key}) => (key === searchKey))||{value:undefined}).value
     const {artist, album, title, comment, bpm, genre } =  common;  
     
-    const transformedEnergy = parseFloat(findRawField('TXXX:EnergyLevel'));
+    const transformedEnergy:number = parseFloat(findRawField('TXXX:EnergyLevel'));
 
-    const key:string = findRawField("TKEY") || findRawField("key");
+    const key:string = findRawField("TKEY") || findRawField("key") || findRawField("comment");
    
+    console.log("key before normalization:",key);
 
-    
-    const metadata =  {
+    const normalizedKey = doNormalization(key)
+
+    console.log("key after normalization:",normalizedKey);
+
+    const metadata:Metadata =  {
         artist,
         album,
         title,
         rawFields,
-        bpm,
+        bpm: bpm.toFixed(2),
         comment: comment instanceof Array ? comment.join(" ") : comment,
-        key,
+        musicalKey: normalizedKey,
         genre: stringify(genre),
         energy: transformedEnergy        
     };
