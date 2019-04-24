@@ -1,6 +1,8 @@
-import { Message } from "protobufjs";
-import { EventEmitter } from "events";
-import StrictEventEmitter from 'strict-event-emitter-types';
+// import { EventEmitter } from "events";
+
+// import { Message } from "protobufjs";
+// import { EventEmitter } from "events";
+// import StrictEventEmitter from 'strict-event-emitter-types';
 
 declare module 'node-osc' {
 
@@ -16,12 +18,19 @@ declare module 'node-osc' {
     //     on<K extends keyof T>(s: K, listener: (v: T[K]) => void);
     // // and so on for each method
     // }
+
   
-    export class Client extends EventEmitter {
+    export class Client {
         constructor(host:string, port:number);
-    }
-    export class Server extends EventEmitter {
-        constructor(port:number, ipaddress:string);
+        send(msg:any[], callback?:Function)
     }
 
+    type MessageCallback = (message:any[], origin:any) => void;
+    export class Server  {
+        constructor(port:number, ipaddress:string)
+        on(eventName:string, callback:MessageCallback)
+    }   
+
 }
+
+

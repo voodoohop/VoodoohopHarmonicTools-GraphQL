@@ -1,3 +1,10 @@
+import { Maybe } from "./@types/generatedTypes";
+
+type StringMap = { [key: string]: string };
+
+
+type ConvertString = (input:string) => string;
+
 const openkeySequence = [
     "B",
     "F#",
@@ -12,8 +19,10 @@ const openkeySequence = [
     "A",
     "E",
   ];
+
+
   
-  const camelotToKey = {
+  const camelotToKey:StringMap = {
     "11b": "A",
     "8a": "Am",
     "6b": "A#",
@@ -40,7 +49,7 @@ const openkeySequence = [
     "1a": "G#m"
   }
   
-  const openKeyToKey = {
+  const openKeyToKey:StringMap = {
     "4d": "A",
     "1m": "Am",
     "11d": "A#",
@@ -66,7 +75,7 @@ const openkeySequence = [
     "6m": "G#m"
   }
   
-  const keysToCam = {
+  const keysToCam:StringMap  = {
     "c": "8b",
     "am": "8a",
     "g": "9b",
@@ -103,7 +112,7 @@ const openkeySequence = [
     "dm": "7a"
   };
   
-  const camToOpenKey = {
+  const camToOpenKey:StringMap = {
     "8b": "1d",
     "8a": "1m",
     "9b": "2d",
@@ -130,7 +139,7 @@ const openkeySequence = [
     "7a": "12m"
   }
   
-  const normalizeKeys = {
+  const normalizeKeys:StringMap = {
     "c": "C",
     "am": "Am",
     "g": "G",
@@ -167,21 +176,20 @@ const openkeySequence = [
     "dm": "Dm"
   };
   
- export const keysToCamelot = (key) => key
-    ? keysToCam[key.toLowerCase()]
-    : "undefined";
+ export const keysToCamelot:ConvertString = (key:string):string => keysToCam[key.toLowerCase()]
+
   
- export  const keysToOpenkey = (key) => camToOpenKey[keysToCamelot(key)];
+ export  const keysToOpenkey:ConvertString = (key:string):string => camToOpenKey[keysToCamelot(key)];
   
   
-  export const keysNormalize = (key) => key ? normalizeKeys[key.toLowerCase()] : "undefined"
-  // const logInOut = (notation,keyFormatter) => (key) => {     const result =
+  export const keysNormalize:ConvertString = (key:string) => key ? normalizeKeys[key.toLowerCase()] : "undefined"
+  // const logInOut = (notation,keyFormatter) => (key) => {     const result =f
   // keyFormatter(key);     console.log("formatting key", key, "result:",
   // result,"notation:",notation,keyFormatter);     // console.trace();     return
   // result; }
-  const identity = (key) => key;
+  const identity:ConvertString = (key) => key;
   
- export const getKeyFormatter = (keyNotation) => {
+ export const getKeyFormatter = (keyNotation: Maybe<string>):ConvertString => {
     const notation = keyNotation || "TRADITIONAL";
     if (notation === "CAMELOT")
       return keysToCamelot;
@@ -210,36 +218,38 @@ const majorMinorFormat = (m:string):string => {
   
   const openKeyRegEx = /\b\s*((?:1[0-2]|[1-9])(?:d|m))\b.*/i;
 
+const safeDoKeyNormalize = (matches: Maybe<RegExpMatchArray>):Maybe<string> => matches === null ? null : doKeyNormalize(matches);
+const doKeyNormalize = ([_, keyName, flatOrSharp, majorMinor]:RegExpMatchArray) => `${(keyName || "").toUpperCase()}${(flatOrSharp || "")}${majorMinorFormat(majorMinor)}`
 
-const doKeyNormalize = ([_, keyName, flatOrSharp, majorMinor]) => `${(keyName || "").toUpperCase()}${(flatOrSharp || "")}${majorMinorFormat(majorMinor)}`
+const safeLookupSecond = (map:StringMap, matches: Maybe<RegExpMatchArray>):Maybe<string> => matches === null ? null: map[matches[1]];
 
-const normalize = (keyString, keyRegEx, camelotRegEx, openKeyRegEx) =>
+const normalize = (keyString:string, keyRegEx:RegExp, camelotRegEx:RegExp, openKeyRegEx:RegExp):Maybe<string> =>
   keyRegEx.test(keyString) ?
-    doKeyNormalize(keyString.toLowerCase().match(keyRegEx))
+    safeDoKeyNormalize(keyString.toLowerCase().match(keyRegEx))
     :
     camelotRegEx.test(keyString) ?
-      camelotToKey[keyString.toLowerCase().match(camelotRegEx)[1]]
+      safeLookupSecond(camelotToKey, keyString.toLowerCase().match(camelotRegEx))
       : (
-        (openKeyRegEx.test(keyString) ? openKeyToKey[keyString.toLowerCase().match(openKeyRegEx)[1]]
-          : undefined));
+        (openKeyRegEx.test(keyString) ? safeLookupSecond(openKeyToKey,keyString.toLowerCase().match(openKeyRegEx))
+          : null));
 
-export const doNormalization = (possibleKeyString:string):string => normalize(possibleKeyString, keyRegEx, camelotRegEx, openKeyRegEx);
+export const doNormalization = (possibleKeyString:string):Maybe<string> => normalize(possibleKeyString, keyRegEx, camelotRegEx, openKeyRegEx);
 
 // const doNormalization_filename = (possibleKeyString) => normalize(possibleKeyString, keyRegEx_filename, camelotRegEx_filename, openKeyRegEx_filename);
 
-const normalizeKeyFormat = (data, path) => {
-  // console.log("trying to update ",data, data.getIn(["metadata","initialkey"]));
-  const id3Tried =
-    data.updateIn(["metadata", "initialkey"],
-      data.getIn(["metadata", "key"], data.getIn(["metadata", "comment"]) || ""),
-      doNormalization
-    )
-      .update("metadata", md => md.filter((v, k) => v !== undefined));
-  // console.log("after try ",id3Tried.getIn(["metadata","initialkey"]));  
-  const filename = path.split("/").reverse()[0].toLowerCase();
-  console.log("trying to extract metadata from filename", filename, doNormalization(filename));
-  return id3Tried.updateIn(["metadata", "initialkey"], (before) => before || doNormalization(filename));
-}
+// const normalizeKeyFormat = (data, path) => {
+//   // console.log("trying to update ",data, data.getIn(["metadata","initialkey"]));
+//   const id3Tried =
+//     data.updateIn(["metadata", "initialkey"],
+//       data.getIn(["metadata", "key"], data.getIn(["metadata", "comment"]) || ""),
+//       doNormalization
+//     )
+//       .update("metadata", md => md.filter((v, k) => v !== undefined));
+//   // console.log("after try ",id3Tried.getIn(["metadata","initialkey"]));  
+//   const filename = path.split("/").reverse()[0].toLowerCase();
+//   console.log("trying to extract metadata from filename", filename, doNormalization(filename));
+//   return id3Tried.updateIn(["metadata", "initialkey"], (before) => before || doNormalization(filename));
+// }
 
 
 

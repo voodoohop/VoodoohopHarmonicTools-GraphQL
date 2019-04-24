@@ -35,7 +35,7 @@ export type Metadata = {
   comment?: Maybe<Scalars["String"]>;
   genre?: Maybe<Scalars["String"]>;
   energy?: Maybe<Scalars["Float"]>;
-  rawFields?: Maybe<Array<Maybe<RawMetadata>>>;
+  rawFields: Array<RawMetadata>;
   field?: Maybe<Scalars["String"]>;
 };
 
@@ -57,8 +57,8 @@ export type QueryAudioFileArgs = {
 };
 
 export type RawMetadata = {
-  key?: Maybe<Scalars["String"]>;
-  value?: Maybe<Scalars["String"]>;
+  key: Scalars["String"];
+  value: Scalars["String"];
 };
 
 export type Subscription = {
@@ -197,7 +197,7 @@ export type MetadataResolvers<
   genre?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   energy?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
   rawFields?: Resolver<
-    Maybe<Array<Maybe<ResolversTypes["RawMetadata"]>>>,
+    Array<ResolversTypes["RawMetadata"]>,
     ParentType,
     ContextType
   >;
@@ -226,8 +226,8 @@ export type RawMetadataResolvers<
   ContextType = any,
   ParentType = ResolversTypes["RawMetadata"]
 > = {
-  key?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  value?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  key?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  value?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
 };
 
 export type SubscriptionResolvers<

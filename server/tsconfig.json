@@ -9,9 +9,12 @@
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "noImplicitAny": false,
-    "strictNullChecks": false
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "typeRoots":["./src/@types","./node_modules/@types"]
   },
   "compileOnSave": true,
   "include": ["src"]
 }
+
+

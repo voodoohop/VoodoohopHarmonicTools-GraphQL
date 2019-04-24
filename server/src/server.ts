@@ -12,7 +12,7 @@ const HELLO_ADDED = 'HELLO_ADDED';
 import {getKeyFormatter} from "./keyformatter";
 import extractRelevantMetadata from './extractRelevantMetadata';
 
-import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers} from "./@types/generatedTypes";
+import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe} from "./@types/generatedTypes";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -24,8 +24,8 @@ const typeDefs = gql`
     }
 
     type RawMetadata {
-        key: String
-        value: String
+        key: String!
+        value: String!
     }
 
     type Metadata {
@@ -37,7 +37,7 @@ const typeDefs = gql`
         comment: String
         genre: String
         energy: Float
-        rawFields: [RawMetadata],
+        rawFields: [RawMetadata!]!,
         field(key: String!): String
     }
 
@@ -76,14 +76,18 @@ const queryResolvers:QueryResolvers = {
   }
 
 const metadataResolvers:MetadataResolvers = {
-    field: ({rawFields},{key: searchKey}) => {     
+    field: ({rawFields},{key: searchKey}):Maybe<string> => {     
         // console.log("getting subdata",fields, key);
-        const selectedField = rawFields.find(({key}) => key === searchKey )
-        return ""+selectedField.value;
+        const findResult = rawFields.find(({key}) => key === searchKey)
+        if (findResult === undefined)
+            return null;
+        return ""+findResult.value
     },
-    musicalKey: (obj, {notation}) => {
-        console.log("args", obj, notation);
-        return getKeyFormatter(notation)(obj.musicalKey);                 
+    musicalKey: ({musicalKey}, {notation}) => {
+        if (musicalKey === null || musicalKey === undefined)
+            return null; 
+        console.log("args", musicalKey, notation);
+        return getKeyFormatter(notation)(musicalKey);                 
     }
   };
 
@@ -122,16 +126,20 @@ child.stderr.pipe(stderr);
 child.stdout.pipe(stdout);
 // console.log(child);
 
-import osc = require("node-osc");
+import {Client, Server, MessageCallback} from "node-osc";
 
 import sleep = require('await-sleep')   ;
 
+
+const msgCallback:MessageCallback = (message:any[], origin:any) => {
+    console.log("message",message,"origin",origin);
+};
 async function startOscTest() {
-    const oscServer = new osc.Server(2000,"0.0.0.0");
-    oscServer.on("message", (message, origin) => console.log("message",message,"origin",origin));
+    const oscServer = new Server(2000,"0.0.0.0");
+    oscServer.on("message", msgCallback );
     await sleep(1000);
-    const oscClient = new osc.Client("localhost",2000);
-    oscClient.send("/bla",200,3.5);
+    const oscClient = new Client("localhost",2000);
+    oscClient.send(["/bla",200,3.5]);
 }
 
 startOscTest()

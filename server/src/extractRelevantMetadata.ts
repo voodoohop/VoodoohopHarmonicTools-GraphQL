@@ -1,10 +1,10 @@
 import { IAudioMetadata } from "music-metadata/lib";
 
 import {doNormalization} from "./keyformatter";
-import { Metadata } from "./@types/generatedTypes";
+import { Metadata, Maybe } from "./@types/generatedTypes";
 
-function stringify(o) {
-    return o instanceof Array ? o.join(",") : (o !== Object(o) ? o : JSON.stringify(o))   
+function stringify(o:any):string {
+    return o instanceof Array ? o.join(",") : (o !== Object(o) ? ""+o : JSON.stringify(o))   
 }
 
 interface RawTagFormat {
@@ -15,6 +15,11 @@ interface ConvertedTagFormat {
     key:string,
     value:string
 }
+
+interface AnyArray {
+    [index: string]: any;
+}
+
 const transformNative = ({id,value}:RawTagFormat):ConvertedTagFormat => ({key:id,value: stringify(value)});        
  
 export default function extractRelevantMetadata({native, common}:IAudioMetadata):Metadata {
@@ -27,18 +32,26 @@ export default function extractRelevantMetadata({native, common}:IAudioMetadata)
     }
     const nativeFields = nativeDataTypesAvailable.reduce<ConvertedTagFormat[]>(concatTags, []);
  
-    const rawFields = nativeFields.concat(Object.keys(common).map(key => ({key, value: stringify(common[key])})));
+    const rawFields = nativeFields.concat(Object.keys(common).map((key:string):ConvertedTagFormat => {
+       
+    
+        const commonValue:any = (common as AnyArray)[key]; 
+     const value = stringify(commonValue);
+     return ({key, value});
+    }));
 
-    const findRawField = (searchKey:string):string => (rawFields.find(({key}) => (key === searchKey))||{value:undefined}).value
+    const findRawField = (searchKey:string):Maybe<string> => (rawFields.find(({key}) => (key === searchKey))||{value:null}).value
     const {artist, album, title, comment, bpm, genre } =  common;  
     
-    const transformedEnergy:number = parseFloat(findRawField('TXXX:EnergyLevel'));
+    const rawEnergy = findRawField('TXXX:EnergyLevel'); 
 
-    const key:string = findRawField("TKEY") || findRawField("key") || findRawField("comment");
+    const transformedEnergy:Maybe<number> = rawEnergy === null ? null: parseFloat(rawEnergy);
+
+    const key:Maybe<string> = findRawField("TKEY") || findRawField("key") || findRawField("comment") || null;
    
     console.log("key before normalization:",key);
 
-    const normalizedKey = doNormalization(key)
+    const normalizedKey:Maybe<string> = key === null ? null : doNormalization(key);
 
     console.log("key after normalization:",normalizedKey);
 
