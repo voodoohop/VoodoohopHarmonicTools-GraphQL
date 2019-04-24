@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start":"nodemon -w . --experimental-modules  src/server.js" 
+    "start": "nodemon -w . --experimental-modules  src/server.js",
+    "postinstall": "virtualenv-postinstall"
   },
   "author": "",
   "license": "ISC",
@@ -14,10 +15,12 @@
     "apollo-server": "^2.4.8",
     "dataloader": "^1.4.0",
     "graphql": "^14.2.1",
-    "music-metadata": "^3.6.0"
+    "music-metadata": "^3.6.0",
+    "node-osc": "https://github.com/voodoohop/node-osc/tarball/master",
+    "virtualenv": "^0.3.1"
   },
   "devDependencies": {
     "nodemon": "^1.18.11"
   },
-  "type":"module"
+  "type": "module"
 }

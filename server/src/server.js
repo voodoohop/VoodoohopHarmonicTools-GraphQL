@@ -98,3 +98,17 @@ setInterval(() =>{
     console.log("hello");
      pubsub.publish(HELLO_ADDED, {helloAdded: "hello"})
 }, 50000)
+
+
+
+import virtualenv from "virtualenv";
+import {resolve} from "path";
+
+import {stderr, stdout} from "process"
+var packagePath = resolve("./package.json"); 
+var env = virtualenv(packagePath);  
+
+var child = env.spawnPython([resolve("./src/python/analyzeKey.py")]);
+child.stderr.pipe(stderr);
+child.stdout.pipe(stdout);
+console.log(child);
