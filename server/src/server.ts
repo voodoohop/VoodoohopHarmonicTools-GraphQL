@@ -126,7 +126,7 @@ child.stderr.pipe(stderr);
 child.stdout.pipe(stdout);
 // console.log(child);
 
-import {Client, Server, MessageCallback} from "node-osc";
+import {createClient    , createServer, MessageCallback} from "node-osc";
 
 import sleep = require('await-sleep')   ;
 
@@ -134,12 +134,36 @@ import sleep = require('await-sleep')   ;
 const msgCallback:MessageCallback = (message:any[], origin:any) => {
     console.log("message",message,"origin",origin);
 };
-async function startOscTest() {
-    const oscServer = new Server(2000,"0.0.0.0");
-    oscServer.on("message", msgCallback );
-    await sleep(1000);
-    const oscClient = new Client("localhost",2000);
-    oscClient.send(["/bla",200,3.5]);
-}
+// async function startOscTest() {
+// //     var oscServer2 = new Server(8900, "0.0.0.0");
+// //      oscServer2.setMaxListeners(100);
+// // // console.log("oscSerrver in renderer", oscServer2);
 
-startOscTest()
+// //     oscServer2.on("message", msgCallback);
+
+//     const oscServer = await createServer(2000,"0.0.0.0");
+//     oscServer.on("message", msgCallback );
+//     // const oscServer2 = await createServer(2000,"0.0.0.0");
+//     // oscServer.on("error",msgCallback);
+    
+//     // oscServer2.on("message", msgCallback );
+//     // oscServer2.on("error", msgCallback )
+//     await sleep(1000);
+//     const oscClient = new Client("localhost",2000);
+//     oscClient.send(["/byeeahla",200,3.5]);
+//     const oscClient2 = new Client("localhost",8889);
+//     oscClient2.send(["/bla",200,3.5]);
+// }
+
+// startOscTest()
+
+import {getOscInputStream,oscOutput} from "./liveModel/oscInOut";
+
+async function startOSCServer() {
+   const oscInputStream= await getOscInputStream();
+   console.log("got input stream",oscInputStream);
+   oscInputStream.observe((m:any) => console.log(m));
+}
+// console.log("inputstreams",, oscOutput);
+
+startOSCServer();
