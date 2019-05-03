@@ -1,52 +1,75 @@
 import {fromEvent,fromPromise, Stream} from 'most';
+import {UDPPort, OscMessage, Argument} from "osc";
 
-import {createServer,createClient, MessageCallback} from "node-osc";
-import { EventEmitter } from 'events';
+// import {createServer,createClient, MessageCallback} from "node-osc";
+// import { EventEmitter } from 'events';
 import { Maybe } from '../@types/generatedTypes';
 // import {create as createSubject} from "most-subject";
 
-const log=(name:string) => (...a:any[]) => console.log(name,";",...a);
-type OSCArgument = string | number;
 
-type OSCMessage = {
+
+
+const log=(name:string) => (...a:any[]) => console.log(name,";",...a);
+type VoodooOSCArgument = string | number |  Uint8Array;
+
+type VoodooOSCMessage = {
   address: string,
-  data: OSCArgument[]
+  data: VoodooOSCArgument[]
 }
 
+async function createServer(port:number, host:string) {
+  var udpPort = new UDPPort({
+    localAddress: host,
+    localPort: port,
+    metadata: false,
+    unpackSingleArgs: false
+});
+udpPort.setMaxListeners(100);
+  udpPort.open();
+  return udpPort;
+}
 
-function startServer():Stream<OSCMessage> {
+// here we can safely map to array because we set the configuration accordingly
+const mapOSCToVoodoo = ([{args, address}]: [OscMessage]):VoodooOSCMessage => ({address, data: args as VoodooOSCArgument[]})
+
+function startServer():Stream<VoodooOSCMessage> {
 
   const server$ = fromPromise(createServer(8889, '0.0.0.0'));;
    // oscServer.setMaxListeners(100);
    //  onsole.log("oscSerrver in renderer", oscServer);
-   
-   let oscInputStream:Stream<OSCMessage> = server$.flatMap(oscServer => fromEvent<any[]>("message", oscServer))
-   .tap(oscIn => console.log("oscIn",oscIn))
-   .map((f:any[][]) => f[0])
-   .map(([address, ... data]) => ({address:""+address, data})); 
-   // .skipRepeatsWith((e,f) => JSON.stringify(f) === JSON.stringify(e))
-   // .tap(log("oscIn"));
+
+   let oscInputStream:Stream<VoodooOSCMessage> = server$.flatMap(oscServer => fromEvent<[OscMessage]>("message", oscServer))
+   .map(mapOSCToVoodoo); 
    return oscInputStream;
   }
 
-let oscInputStream:Maybe<Stream<OSCMessage>> = null;
+let oscInputStream:Maybe<Stream<VoodooOSCMessage>> = null;
 
-export function getOscInputStream():Stream<OSCMessage> {
+export function getOscInputStream():Stream<VoodooOSCMessage> {
    if (!oscInputStream)
      oscInputStream = startServer().multicast();
    
    return oscInputStream;
 }
 
+type SendFunction = (message:VoodooOSCMessage) => void;
 
-const clientSend=createClient("localhost", 7778);
+function createClient(host:string,port:number):SendFunction {
+var udpPort = new UDPPort({
+  remoteAddress: host,
+  remotePort: port,
+  metadata: false,
+  unpackSingleArgs: false
+});
+udpPort.open();
+  return (message:VoodooOSCMessage)=> udpPort.send({args: message.data, address:message.address});
+}
 
-export function addOscOutputStream(outStream:Stream<OSCMessage> ):void {
-  outStream.observe(message => 
-  clientSend(message.address, ...message.data, function () {
-// 			resolve(Immutable.Map({ sent: oscMessage }));
-// 			// client.kill();
-		}));
+const clientSend = createClient("localhost", 7778);
+
+let oscClient: Maybe<Promise<Function>> = null;
+export function addOscOutputStream(outStream:Stream<VoodooOSCMessage> ):void {
+  outStream.observe(clientSend);
     // message.address)
 }
 

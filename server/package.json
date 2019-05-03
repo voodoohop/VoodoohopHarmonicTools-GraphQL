@@ -21,7 +21,7 @@
     "graphql": "^14.2.1",
     "most": "^1.7.3",
     "music-metadata": "^3.6.0",
-    "node-osc": "git+https://github.com/voodoohop/node-osc.git",
+    "osc": "github:voodoohop/osc.js",
     "strict-event-emitter-types": "^2.0.0",
     "virtualenv": "^0.3.1"
   },
