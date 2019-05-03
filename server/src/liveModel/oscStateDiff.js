@@ -28,7 +28,7 @@ function doDiff(stream,options) {
 			fromJS(mapped)):most.from(mapped);
 			// most.from(4
 		})
-		.tap(log("oscDiffDiff2"));
+		.tap(log("oscDiffDiff3"));
 }
 
 var trackState = (oscState, options={}) => 

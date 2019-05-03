@@ -157,7 +157,7 @@ const msgCallback:MessageCallback = (message:any[], origin:any) => {
 
 // startOscTest()
 
-import {getOscInputStream,oscOutput} from "./liveModel/oscInOut";
+import {getOscInputStream,addOscOutputStream} from "./liveModel/oscInOut";
 
 async function startOSCServer() {
    const oscInputStream= await getOscInputStream();
@@ -165,5 +165,8 @@ async function startOSCServer() {
    oscInputStream.observe((m:any) => console.log(m));
 }
 // console.log("inputstreams",, oscOutput);
-
 startOSCServer();
+
+import {just} from 'most';
+
+addOscOutputStream(just({address: "sendAll", data:[]}))

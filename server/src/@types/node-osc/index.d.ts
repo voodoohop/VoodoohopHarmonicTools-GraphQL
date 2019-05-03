@@ -1,6 +1,7 @@
 
 
 
+
 // import { EventEmitter } from "events";
 
 // import { Message } from "protobufjs";
@@ -23,12 +24,19 @@ declare module 'node-osc' {
     // }
     import { EventEmitter } from 'events'
   
+ 
+
+// type OSCMessage = [string,      ...number];
+
+    type OSCClient = (...message: any[]) => void;
 
     type MessageCallback = (message:any[], origin:any) => void;
+   
     
+
     export function createServer(port:number, host:string):Promise<EventEmitter>;
 
-    export function createClient(host:string,   port:number):Promise<EventEmitter>;
+    export function createClient(host:string,   port:number): OSCClient;
 
 }
 
