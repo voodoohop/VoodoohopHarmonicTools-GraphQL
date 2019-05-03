@@ -14,7 +14,7 @@ type VoodooOSCArgument = string | number |  Uint8Array;
 
 type VoodooOSCMessage = {
   address: string,
-  data: VoodooOSCArgument[]
+  data: VoodooOSCArgument[] | VoodooOSCArgument | null
 }
 
 async function createServer(port:number, host:string) {
@@ -22,7 +22,7 @@ async function createServer(port:number, host:string) {
     localAddress: host,
     localPort: port,
     metadata: false,
-    unpackSingleArgs: false
+    unpackSingleArgs: true
 });
 udpPort.setMaxListeners(100);
   udpPort.open();
@@ -30,7 +30,7 @@ udpPort.setMaxListeners(100);
 }
 
 // here we can safely map to array because we set the configuration accordingly
-const mapOSCToVoodoo = ([{args, address}]: [OscMessage]):VoodooOSCMessage => ({address, data: args as VoodooOSCArgument[]})
+const mapOSCToVoodoo = ([{args, address}]: [OscMessage]):VoodooOSCMessage => ({address, data: args as VoodooOSCArgument})
 
 function startServer():Stream<VoodooOSCMessage> {
 
@@ -59,10 +59,14 @@ var udpPort = new UDPPort({
   remoteAddress: host,
   remotePort: port,
   metadata: false,
-  unpackSingleArgs: false
+  unpackSingleArgs: true
 });
 udpPort.open();
-  return (message:VoodooOSCMessage)=> udpPort.send({args: message.data, address:message.address});
+  return (message:VoodooOSCMessage):void=> udpPort.send({args: makeArray(message), address:message.address});
+
+  function makeArray(message: { address: string; data: VoodooOSCArgument | (VoodooOSCArgument)[] | null; }): VoodooOSCArgument[] {
+    return message.data != null ? (message.data instanceof Array ? message.data : [message.data]) : [];
+  }
 }
 
 const clientSend = createClient("localhost", 7778);

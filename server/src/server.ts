@@ -169,4 +169,4 @@ startOSCServer();
 
 import {just} from 'most';
 
-addOscOutputStream(just({address: "/sendAll", data:[]}))
+addOscOutputStream(just({address: "/sendAll", data:null}))
