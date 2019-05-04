@@ -126,7 +126,7 @@ child.stderr.pipe(stderr);
 child.stdout.pipe(stdout);
 // console.log(child);
 
-import {createClient    , createServer, MessageCallback} from "node-osc";
+import {createClient, createServer, MessageCallback} from "node-osc";
 
 import sleep = require('await-sleep')   ;
 

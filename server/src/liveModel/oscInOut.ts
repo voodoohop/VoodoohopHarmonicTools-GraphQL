@@ -1,15 +1,14 @@
 import {fromEvent,fromPromise, Stream} from 'most';
 import {UDPPort, OscMessage, Argument} from "osc";
 
-// import {createServer,createClient, MessageCallback} from "node-osc";
-// import { EventEmitter } from 'events';
 import { Maybe } from '../@types/generatedTypes';
-// import {create as createSubject} from "most-subject";
+
 
 
 
 
 const log=(name:string) => (...a:any[]) => console.log(name,";",...a);
+
 type VoodooOSCArgument = string | number |  Uint8Array;
 
 type VoodooOSCMessage = {
@@ -29,8 +28,14 @@ udpPort.setMaxListeners(100);
   return udpPort;
 }
 
+
+
+function convertStringsToUTF8(data:any):any {
+  // console.log("converting ",data);    
+  return typeof data == "string" ? decodeURIComponent(escape(data)):data
+}
 // here we can safely map to array because we set the configuration accordingly
-const mapOSCToVoodoo = ([{args, address}]: [OscMessage]):VoodooOSCMessage => ({address, data: args as VoodooOSCArgument})
+const mapOSCToVoodoo = ([{args, address}]: [OscMessage]):VoodooOSCMessage => ({address, data: convertStringsToUTF8(args) as VoodooOSCArgument})
 
 function startServer():Stream<VoodooOSCMessage> {
 
@@ -43,16 +48,18 @@ function startServer():Stream<VoodooOSCMessage> {
    return oscInputStream;
   }
 
-let oscInputStream:Maybe<Stream<VoodooOSCMessage>> = null;
+let oscInputStream:Maybe<Stream<VoodoohopMessage>> = null;
 
-export function getOscInputStream():Stream<VoodooOSCMessage> {
+export function getOscInputStream():Stream<VoodoohopMessage> {
    if (!oscInputStream)
-     oscInputStream = startServer().multicast();
+     oscInputStream = startServer().map(convertOscMessage).multicast();
    
    return oscInputStream;
 }
 
 type SendFunction = (message:VoodooOSCMessage) => void;
+
+
 
 function createClient(host:string,port:number):SendFunction {
 var udpPort = new UDPPort({
@@ -62,10 +69,11 @@ var udpPort = new UDPPort({
   unpackSingleArgs: true
 });
 udpPort.open();
-  return (message:VoodooOSCMessage):void=> udpPort.send({args: makeArray(message), address:message.address});
+  return (message:VoodooOSCMessage):void=> udpPort.send({args: makeArray(message.data), address:message.address});
 
-  function makeArray(message: { address: string; data: VoodooOSCArgument | (VoodooOSCArgument)[] | null; }): VoodooOSCArgument[] {
-    return message.data != null ? (message.data instanceof Array ? message.data : [message.data]) : [];
+
+  function makeArray(data: VoodooOSCArgument | (VoodooOSCArgument)[] | null): VoodooOSCArgument[] {
+    return data != null ? (data instanceof Array ? data : [data]) : [];
   }
 }
 
@@ -74,8 +82,80 @@ const clientSend = createClient("localhost", 7778);
 let oscClient: Maybe<Promise<Function>> = null;
 export function addOscOutputStream(outStream:Stream<VoodooOSCMessage> ):void {
   outStream.observe(clientSend);
-    // message.address)
 }
+
+enum VoodoohopOscMessageTypes {
+  CONTROL = "control",
+  TRACK ="track",
+  // SELECTEDCLIP = "selectedClip",
+  UNKNOWN="unknown"
+}
+
+interface MaybeVoodoohopOscMessage {
+  path: VoodoohopOscMessageTypes;
+  // [propName: string]: any
+}
+
+interface VoodoohopMessageBase extends MaybeVoodoohopOscMessage{
+  key: string;
+  value: VoodooOSCArgument;
+}
+
+interface VoodoohopControlMessage extends VoodoohopMessageBase {
+  path: VoodoohopOscMessageTypes.CONTROL;
+}      
+
+type VoodoohopClipIdentifier = "playingClip" | "selectedClip" | "UNKNOWN";
+interface VoodoohopTrackClipMessage extends VoodoohopMessageBase {
+  path: VoodoohopOscMessageTypes.TRACK;
+  track: string;
+  clip: VoodoohopClipIdentifier;
+}  
+
+interface VoodoohopUnknownMessage extends MaybeVoodoohopOscMessage {
+  path: VoodoohopOscMessageTypes.UNKNOWN;
+}  
+
+
+// interface VoodoohopSelectedClipMessage extends VoodoohopMessageBase {
+//   path: VoodoohopOscMessageTypes.SELECTEDCLIP
+// }
+
+type VoodoohopMessage = VoodoohopControlMessage | VoodoohopTrackClipMessage /*| VoodoohopSelectedClipMessage */| VoodoohopUnknownMessage;
+
+function convertOscMessage({address, data}:VoodooOSCMessage):VoodoohopMessage {
+  const [_,rootPath,...args] = address.split("/");
+  // console.log("rootPath",rootPath);
+   switch(rootPath) {
+    case VoodoohopOscMessageTypes.CONTROL: return {
+      path: VoodoohopOscMessageTypes.CONTROL, 
+      key: args[0], 
+      value: data as VoodooOSCArgument
+    };
+    case VoodoohopOscMessageTypes.TRACK: return {
+      path: VoodoohopOscMessageTypes.TRACK, 
+      key: args[2], 
+      value: data as VoodooOSCArgument,
+      track:args[0],
+      clip: args[1] === "playingClip" ? "playingClip": (args[1] === "selectedClip" ? "selectedClip":"UNKNOWN")
+    };
+    // case VoodoohopOscMessageTypes.SELECTEDCLIP: return {
+    //   path: VoodoohopOscMessageTypes.SELECTEDCLIP, 
+    //   key: args[2], 
+    //   value:data as VoodooOSCArgument, 
+    // };
+  }
+   return {path: VoodoohopOscMessageTypes.UNKNOWN};
+}
+
+// function convertOscMessages(message: VoodooOSCMessage):VoodoohopMessage {
+//   const [message.address.split("/")
+// }
+
+
+// getOscInputStream().map(convertOscMessage).observe(log("converted message"));
+
+
 
 
 // export var oscInputStream = fromEvent<any[]>("message", oscServer)
