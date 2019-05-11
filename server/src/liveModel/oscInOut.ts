@@ -102,7 +102,11 @@ export interface VoodoohopControlMessage extends VoodoohopMessageBase {
   type: VoodooMessageTypes.CONTROL;
 }      
 
-type VoodoohopClipIdentifier = "playingClip" | "selectedClip" | "UNKNOWN";
+export enum VoodoohopClipIdentifier {
+ PLAYING,
+ SELECTED,
+ UNKNOWNERROR
+}
 export interface VoodoohopTrackClipMessage extends VoodoohopMessageBase {
   type: VoodooMessageTypes.TRACK;
   track: string;
@@ -134,7 +138,7 @@ function convertOscMessage({address, data}:VoodooOSCMessage):VoodoohopMessage {
       key: args[2], 
       value: data as VoodooOSCArgument,
       track:args[0],
-      clip: args[1] === "playingClip" ? "playingClip": (args[1] === "selectedClip" ? "selectedClip":"UNKNOWN")
+      clip: args[1] === "playingClip" ? VoodoohopClipIdentifier.PLAYING : (args[1] === "selectedClip" ? VoodoohopClipIdentifier.SELECTED: VoodoohopClipIdentifier.UNKNOWNERROR)
     };
     // case VoodooMessageTypes.SELECTEDCLIP: return {
     //   path: VoodooMessageTypes.SELECTEDCLIP, 

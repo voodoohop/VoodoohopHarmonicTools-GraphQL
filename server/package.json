@@ -15,6 +15,7 @@
     "@most/scheduler": "^1.2.2",
     "@most/types": "^1.0.1",
     "@types/graphql": "^14.2.0",
+    "@types/ramda": "^0.26.8",
     "apollo-errors": "^1.9.0",
     "apollo-server": "^2.4.8",
     "await-sleep": "0.0.1",
@@ -23,6 +24,7 @@
     "most": "^1.7.3",
     "music-metadata": "^3.6.0",
     "osc": "github:voodoohop/osc.js",
+    "ramda": "^0.26.1",
     "strict-event-emitter-types": "^2.0.0",
     "virtualenv": "^0.3.1"
   },

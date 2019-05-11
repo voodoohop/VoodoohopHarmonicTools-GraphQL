@@ -10,6 +10,16 @@ export type Scalars = {
   Upload: any;
 };
 
+export type AbletonLiveClip = {
+  name?: Maybe<Scalars["String"]>;
+  filepath?: Maybe<Scalars["String"]>;
+};
+
+export type AbletonLiveClips = {
+  playing?: Maybe<Array<AbletonLiveClip>>;
+  selected?: Maybe<AbletonLiveClip>;
+};
+
 export type AbletonLiveControls = {
   keyNotation?: Maybe<KeyNotation>;
   visibility?: Maybe<Scalars["Boolean"]>;
@@ -20,6 +30,7 @@ export type AbletonLiveControls = {
 
 export type AbletonLiveState = {
   controls: AbletonLiveControls;
+  clips?: Maybe<AbletonLiveClips>;
 };
 
 export type AudioFile = {
@@ -170,6 +181,8 @@ export type ResolversTypes = ResolversObject<{
   AbletonLiveState: AbletonLiveState;
   AbletonLiveControls: AbletonLiveControls;
   Boolean: Scalars["Boolean"];
+  AbletonLiveClips: AbletonLiveClips;
+  AbletonLiveClip: AbletonLiveClip;
   Subscription: {};
   CacheControlScope: CacheControlScope;
   Upload: Scalars["Upload"];
@@ -185,6 +198,30 @@ export type CacheControlDirectiveResolver<
     scope?: Maybe<Maybe<CacheControlScope>>;
   }
 > = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
+export type AbletonLiveClipResolvers<
+  ContextType = any,
+  ParentType = ResolversTypes["AbletonLiveClip"]
+> = ResolversObject<{
+  name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  filepath?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+}>;
+
+export type AbletonLiveClipsResolvers<
+  ContextType = any,
+  ParentType = ResolversTypes["AbletonLiveClips"]
+> = ResolversObject<{
+  playing?: Resolver<
+    Maybe<Array<ResolversTypes["AbletonLiveClip"]>>,
+    ParentType,
+    ContextType
+  >;
+  selected?: Resolver<
+    Maybe<ResolversTypes["AbletonLiveClip"]>,
+    ParentType,
+    ContextType
+  >;
+}>;
 
 export type AbletonLiveControlsResolvers<
   ContextType = any,
@@ -223,6 +260,11 @@ export type AbletonLiveStateResolvers<
 > = ResolversObject<{
   controls?: Resolver<
     ResolversTypes["AbletonLiveControls"],
+    ParentType,
+    ContextType
+  >;
+  clips?: Resolver<
+    Maybe<ResolversTypes["AbletonLiveClips"]>,
     ParentType,
     ContextType
   >;
@@ -318,6 +360,8 @@ export interface UploadScalarConfig
 }
 
 export type Resolvers<ContextType = any> = ResolversObject<{
+  AbletonLiveClip?: AbletonLiveClipResolvers<ContextType>;
+  AbletonLiveClips?: AbletonLiveClipsResolvers<ContextType>;
   AbletonLiveControls?: AbletonLiveControlsResolvers<ContextType>;
   AbletonLiveState?: AbletonLiveStateResolvers<ContextType>;
   AudioFile?: AudioFileResolvers<ContextType>;
