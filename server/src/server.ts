@@ -9,10 +9,12 @@ const pubsub = new PubSub();
 
 const HELLO_ADDED = 'HELLO_ADDED';
 
+const LIVE_STATE_CHANGED = 'LIVE_STATE_CHANGED';
+
 import {getKeyFormatter} from "./keyformatter";
 import extractRelevantMetadata from './extractRelevantMetadata';
 
-import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe} from "./@types/generatedTypes";
+import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe, AbletonLiveState} from "./@types/generatedTypes";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -46,20 +48,26 @@ const typeDefs = gql`
         metadata: Metadata
     }
 
+    type AbletonLiveState {
+        masterTempo: Float
+    }
+
     type Query {
         hello: String
         audioFile(path: String!): AudioFile
+        live: AbletonLiveState
     }
 
     type Subscription {
-        helloAdded: String  
+        helloAdded: String,
+        liveState:AbletonLiveState  
     }
 `;
 
-
+let abletonStateStore:AbletonLiveState = {masterTempo: -1};
 
 const audioMetadataLoader = new DataLoader<string, IAudioMetadata>(function(path:string[]):Promise<IAudioMetadata[]> {
-    console.log("I got", path); 
+    // console.log("I got", path); 
     return Promise.all(path.map(path => parseAudioFileMetadata(path, {native: true})));
 }, {batch:false});
 // Prove resolver functions for your schema fields
@@ -73,6 +81,7 @@ const queryResolvers:QueryResolvers = {
         const result:AudioFile = {path, metadata};   
         return result;
     },
+    live: ():AbletonLiveState => abletonStateStore
   }
 
 const metadataResolvers:MetadataResolvers = {
@@ -94,7 +103,8 @@ const metadataResolvers:MetadataResolvers = {
 
 
 const subscriptionResolvers:SubscriptionResolvers = {
-    helloAdded: { subscribe: () => pubsub.asyncIterator([HELLO_ADDED]) }
+    helloAdded: { subscribe: () => pubsub.asyncIterator([HELLO_ADDED]) },
+    liveState: { subscribe: () => pubsub.asyncIterator([LIVE_STATE_CHANGED]) }
 };
 const resolvers:Resolvers= {
   Query: queryResolvers,
@@ -128,41 +138,20 @@ child.stdout.pipe(stdout);
 
 import {createClient, createServer, MessageCallback} from "node-osc";
 
-import sleep = require('await-sleep')   ;
+import sleep = require('await-sleep');
 
 
-const msgCallback:MessageCallback = (message:any[], origin:any) => {
-    console.log("message",message,"origin",origin);
-};
-// async function startOscTest() {
-// //     var oscServer2 = new Server(8900, "0.0.0.0");
-// //      oscServer2.setMaxListeners(100);
-// // // console.log("oscSerrver in renderer", oscServer2);
-
-// //     oscServer2.on("message", msgCallback);
-
-//     const oscServer = await createServer(2000,"0.0.0.0");
-//     oscServer.on("message", msgCallback );
-//     // const oscServer2 = await createServer(2000,"0.0.0.0");
-//     // oscServer.on("error",msgCallback);
-    
-//     // oscServer2.on("message", msgCallback );
-//     // oscServer2.on("error", msgCallback )
-//     await sleep(1000);
-//     const oscClient = new Client("localhost",2000);
-//     oscClient.send(["/byeeahla",200,3.5]);
-//     const oscClient2 = new Client("localhost",8889);
-//     oscClient2.send(["/bla",200,3.5]);
-// }
-
-// startOscTest()
-
-import {getOscInputStream,addOscOutputStream} from "./liveModel/oscInOut";
+import {getOscInputStream,addOscOutputStream, VoodoohopMessage} from "./liveModel/oscInOut";
 
 async function startOSCServer() {
    const oscInputStream= await getOscInputStream();
    console.log("got input stream",oscInputStream);
-   oscInputStream.observe((m:any) => console.log(m));
+   oscInputStream.scan((previousState:AbletonLiveState, message:VoodoohopMessage) => {
+    console.log("got message", message);
+    
+    return previousState;
+   }, {}).drain();
+//    oscInputStream.observe((m:any) => console.log(m));
 }
 // console.log("inputstreams",, oscOutput);
 startOSCServer();

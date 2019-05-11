@@ -22,8 +22,8 @@ async function createServer(port:number, host:string) {
     localPort: port,
     metadata: false,
     unpackSingleArgs: true
-});
-udpPort.setMaxListeners(100);
+  });
+  udpPort.setMaxListeners(100);
   udpPort.open();
   return udpPort;
 }
@@ -40,9 +40,6 @@ const mapOSCToVoodoo = ([{args, address}]: [OscMessage]):VoodooOSCMessage => ({a
 function startServer():Stream<VoodooOSCMessage> {
 
   const server$ = fromPromise(createServer(8889, '0.0.0.0'));;
-   // oscServer.setMaxListeners(100);
-   //  onsole.log("oscSerrver in renderer", oscServer);
-
    let oscInputStream:Stream<VoodooOSCMessage> = server$.flatMap(oscServer => fromEvent<[OscMessage]>("message", oscServer))
    .map(mapOSCToVoodoo); 
    return oscInputStream;
@@ -84,7 +81,7 @@ export function addOscOutputStream(outStream:Stream<VoodooOSCMessage> ):void {
   outStream.observe(clientSend);
 }
 
-enum VoodoohopOscMessageTypes {
+export enum VoodooMessageTypes {
   CONTROL = "control",
   TRACK ="track",
   // SELECTEDCLIP = "selectedClip",
@@ -92,7 +89,7 @@ enum VoodoohopOscMessageTypes {
 }
 
 interface MaybeVoodoohopOscMessage {
-  path: VoodoohopOscMessageTypes;
+  type: VoodooMessageTypes;
   // [propName: string]: any
 }
 
@@ -102,55 +99,51 @@ interface VoodoohopMessageBase extends MaybeVoodoohopOscMessage{
 }
 
 interface VoodoohopControlMessage extends VoodoohopMessageBase {
-  path: VoodoohopOscMessageTypes.CONTROL;
+  type: VoodooMessageTypes.CONTROL;
 }      
 
 type VoodoohopClipIdentifier = "playingClip" | "selectedClip" | "UNKNOWN";
 interface VoodoohopTrackClipMessage extends VoodoohopMessageBase {
-  path: VoodoohopOscMessageTypes.TRACK;
+  type: VoodooMessageTypes.TRACK;
   track: string;
   clip: VoodoohopClipIdentifier;
-}  
+}
 
 interface VoodoohopUnknownMessage extends MaybeVoodoohopOscMessage {
-  path: VoodoohopOscMessageTypes.UNKNOWN;
+  type: VoodooMessageTypes.UNKNOWN;
 }  
 
 
 // interface VoodoohopSelectedClipMessage extends VoodoohopMessageBase {
-//   path: VoodoohopOscMessageTypes.SELECTEDCLIP
+//   path: VoodooMessageTypes.SELECTEDCLIP
 // }
 
-type VoodoohopMessage = VoodoohopControlMessage | VoodoohopTrackClipMessage /*| VoodoohopSelectedClipMessage */| VoodoohopUnknownMessage;
+export type VoodoohopMessage = VoodoohopControlMessage | VoodoohopTrackClipMessage /*| VoodoohopSelectedClipMessage */| VoodoohopUnknownMessage;
 
 function convertOscMessage({address, data}:VoodooOSCMessage):VoodoohopMessage {
-  const [_,rootPath,...args] = address.split("/");
+  const [_,rootType,...args] = address.split("/");
   // console.log("rootPath",rootPath);
-   switch(rootPath) {
-    case VoodoohopOscMessageTypes.CONTROL: return {
-      path: VoodoohopOscMessageTypes.CONTROL, 
+   switch(rootType) {
+    case VoodooMessageTypes.CONTROL: return {
+      type: VoodooMessageTypes.CONTROL, 
       key: args[0], 
       value: data as VoodooOSCArgument
     };
-    case VoodoohopOscMessageTypes.TRACK: return {
-      path: VoodoohopOscMessageTypes.TRACK, 
+    case VoodooMessageTypes.TRACK: return {
+      type: VoodooMessageTypes.TRACK, 
       key: args[2], 
       value: data as VoodooOSCArgument,
       track:args[0],
       clip: args[1] === "playingClip" ? "playingClip": (args[1] === "selectedClip" ? "selectedClip":"UNKNOWN")
     };
-    // case VoodoohopOscMessageTypes.SELECTEDCLIP: return {
-    //   path: VoodoohopOscMessageTypes.SELECTEDCLIP, 
+    // case VoodooMessageTypes.SELECTEDCLIP: return {
+    //   path: VoodooMessageTypes.SELECTEDCLIP, 
     //   key: args[2], 
     //   value:data as VoodooOSCArgument, 
     // };
   }
-   return {path: VoodoohopOscMessageTypes.UNKNOWN};
+   return {type: VoodooMessageTypes.UNKNOWN};
 }
-
-// function convertOscMessages(message: VoodooOSCMessage):VoodoohopMessage {
-//   const [message.address.split("/")
-// }
 
 
 // getOscInputStream().map(convertOscMessage).observe(log("converted message"));

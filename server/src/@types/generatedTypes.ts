@@ -10,6 +10,10 @@ export type Scalars = {
   Upload: any;
 };
 
+export type AbletonLiveState = {
+  masterTempo?: Maybe<Scalars["Float"]>;
+};
+
 export type AudioFile = {
   path: Scalars["ID"];
   metadata?: Maybe<Metadata>;
@@ -50,6 +54,7 @@ export type MetadataFieldArgs = {
 export type Query = {
   hello?: Maybe<Scalars["String"]>;
   audioFile?: Maybe<AudioFile>;
+  live?: Maybe<AbletonLiveState>;
 };
 
 export type QueryAudioFileArgs = {
@@ -63,6 +68,7 @@ export type RawMetadata = {
 
 export type Subscription = {
   helloAdded?: Maybe<Scalars["String"]>;
+  liveState?: Maybe<AbletonLiveState>;
 };
 
 import {
@@ -150,6 +156,7 @@ export type ResolversTypes = {
   ChordNotation: ChordNotation;
   Float: Scalars["Float"];
   RawMetadata: RawMetadata;
+  AbletonLiveState: AbletonLiveState;
   Subscription: {};
   Boolean: Scalars["Boolean"];
   CacheControlScope: CacheControlScope;
@@ -166,6 +173,17 @@ export type CacheControlDirectiveResolver<
     scope?: Maybe<Maybe<CacheControlScope>>;
   }
 > = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
+export type AbletonLiveStateResolvers<
+  ContextType = any,
+  ParentType = ResolversTypes["AbletonLiveState"]
+> = {
+  masterTempo?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+};
 
 export type AudioFileResolvers<
   ContextType = any,
@@ -220,6 +238,11 @@ export type QueryResolvers<
     ContextType,
     QueryAudioFileArgs
   >;
+  live?: Resolver<
+    Maybe<ResolversTypes["AbletonLiveState"]>,
+    ParentType,
+    ContextType
+  >;
 };
 
 export type RawMetadataResolvers<
@@ -239,6 +262,11 @@ export type SubscriptionResolvers<
     ParentType,
     ContextType
   >;
+  liveState?: SubscriptionResolver<
+    Maybe<ResolversTypes["AbletonLiveState"]>,
+    ParentType,
+    ContextType
+  >;
 };
 
 export interface UploadScalarConfig
@@ -247,6 +275,7 @@ export interface UploadScalarConfig
 }
 
 export type Resolvers<ContextType = any> = {
+  AbletonLiveState?: AbletonLiveStateResolvers<ContextType>;
   AudioFile?: AudioFileResolvers<ContextType>;
   Metadata?: MetadataResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
