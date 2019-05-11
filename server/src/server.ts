@@ -1,4 +1,4 @@
-import { ApolloServer, gql, PubSub }  from 'apollo-server';
+import { ApolloServer, gql, PubSub, IResolvers }  from 'apollo-server';
 
 import {parseFile as parseAudioFileMetadata, IAudioMetadata} from "music-metadata"
 
@@ -14,12 +14,12 @@ const LIVE_STATE_CHANGED = 'LIVE_STATE_CHANGED';
 import {getKeyFormatter} from "./keyformatter";
 import extractRelevantMetadata from './extractRelevantMetadata';
 
-import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe, AbletonLiveState} from "./@types/generatedTypes";
+import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe, AbletonLiveState, AbletonLiveControls, KeyNotation} from "./@types/generatedTypes";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
 
-    enum ChordNotation {
+    enum KeyNotation {
         TRADITIONAL
         CAMELOT
         OPENKEY
@@ -33,7 +33,7 @@ const typeDefs = gql`
     type Metadata {
         title: String
         artist: String
-        musicalKey(notation:ChordNotation = TRADITIONAL): String
+        musicalKey(notation:KeyNotation = TRADITIONAL): String
         bpm: Float
         album: String
         comment: String
@@ -48,8 +48,17 @@ const typeDefs = gql`
         metadata: Metadata
     }
 
-    type AbletonLiveState {
+    type AbletonLiveControls {
+        keyNotation: KeyNotation
+        visibility: Boolean
+        updateClipNames: Boolean
+        updateClipColors: Boolean
         masterTempo: Float
+    }
+
+    type AbletonLiveState {
+        controls: AbletonLiveControls!
+        tracks: [AbletonLiveTrack!]!
     }
 
     type Query {
@@ -60,11 +69,11 @@ const typeDefs = gql`
 
     type Subscription {
         helloAdded: String,
-        liveState:AbletonLiveState  
+        liveState: AbletonLiveState  
     }
 `;
 
-let abletonStateStore:AbletonLiveState = {masterTempo: -1};
+let abletonStateStore:AbletonLiveState = {controls:{}};
 
 const audioMetadataLoader = new DataLoader<string, IAudioMetadata>(function(path:string[]):Promise<IAudioMetadata[]> {
     // console.log("I got", path); 
@@ -106,14 +115,14 @@ const subscriptionResolvers:SubscriptionResolvers = {
     helloAdded: { subscribe: () => pubsub.asyncIterator([HELLO_ADDED]) },
     liveState: { subscribe: () => pubsub.asyncIterator([LIVE_STATE_CHANGED]) }
 };
-const resolvers:Resolvers= {
+const resolvers:IResolvers= {
   Query: queryResolvers,
   Metadata: metadataResolvers,
   Subscription: subscriptionResolvers
 };
 
 const server = new ApolloServer({ typeDefs, resolvers });   
-server.listen({port: parseInt(process.env.PORT || "4000")}).then(({ url }) => {
+server.listen({port: parseInt(process.env.PORT || "4000")}).then(({ url }:{url:string}) => {
   console.log(`🚀 Server ready at ${url}`)
 });
 
@@ -141,21 +150,46 @@ import {createClient, createServer, MessageCallback} from "node-osc";
 import sleep = require('await-sleep');
 
 
-import {getOscInputStream,addOscOutputStream, VoodoohopMessage} from "./liveModel/oscInOut";
+import {getOscInputStream,addOscOutputStream, VoodoohopMessage, VoodooMessageTypes, VoodoohopControlMessage} from "./liveModel/oscInOut";
+
+function controlMessageToState({key,value}: VoodoohopControlMessage):Maybe<AbletonLiveControls> {
+    const mapKeynotation:{[index:string] : KeyNotation} = {
+        "trad": KeyNotation.Traditional,
+        "camelot": KeyNotation.Camelot,
+        "openkey": KeyNotation.Openkey
+    }
+    if (key === "keyNotation")
+        return {keyNotation: mapKeynotation[value as string]};
+    if (key === "updateClipNames")
+        return {updateClipNames: value > 0};
+    if (key === "updateClipColors")
+        return {updateClipColors: value > 0};
+    if (key === "visibility")
+        return {visibility: value > 0};
+    return null;
+}
 
 async function startOSCServer() {
-   const oscInputStream= await getOscInputStream();
-   console.log("got input stream",oscInputStream);
-   oscInputStream.scan((previousState:AbletonLiveState, message:VoodoohopMessage) => {
-    console.log("got message", message);
+
+    const oscInput$= await getOscInputStream();
+    console.log("got input stream",oscInput$);
+   
+    const controlMessage$:Stream<VoodoohopControlMessage> = oscInput$.filter(({type}) => type === VoodooMessageTypes.CONTROL).map(m => m as VoodoohopControlMessage);
+    const controlMessageState$:Stream<AbletonLiveControls> = 
+        controlMessage$
+        .map(controlMessageToState)
+        .filter(s => s !== null)
+        .scan((state:AbletonLiveControls, messageState:AbletonLiveControls) => ({...state, ...messageState}),{});
+
+
+   
+        oscInput$.observe((m:any) => console.log(m));
     
-    return previousState;
-   }, {}).drain();
-//    oscInputStream.observe((m:any) => console.log(m));
+    controlMessageState$.observe((m:any) => console.log(m));
 }
 // console.log("inputstreams",, oscOutput);
 startOSCServer();
 
-import {just} from 'most';
+import {just, Stream} from 'most';
 
 addOscOutputStream(just({address: "/sendAll", data:null}))

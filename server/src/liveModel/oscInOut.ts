@@ -98,18 +98,18 @@ interface VoodoohopMessageBase extends MaybeVoodoohopOscMessage{
   value: VoodooOSCArgument;
 }
 
-interface VoodoohopControlMessage extends VoodoohopMessageBase {
+export interface VoodoohopControlMessage extends VoodoohopMessageBase {
   type: VoodooMessageTypes.CONTROL;
 }      
 
 type VoodoohopClipIdentifier = "playingClip" | "selectedClip" | "UNKNOWN";
-interface VoodoohopTrackClipMessage extends VoodoohopMessageBase {
+export interface VoodoohopTrackClipMessage extends VoodoohopMessageBase {
   type: VoodooMessageTypes.TRACK;
   track: string;
   clip: VoodoohopClipIdentifier;
 }
 
-interface VoodoohopUnknownMessage extends MaybeVoodoohopOscMessage {
+export interface VoodoohopUnknownMessage extends MaybeVoodoohopOscMessage {
   type: VoodooMessageTypes.UNKNOWN;
 }  
 

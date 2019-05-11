@@ -10,8 +10,16 @@ export type Scalars = {
   Upload: any;
 };
 
-export type AbletonLiveState = {
+export type AbletonLiveControls = {
+  keyNotation?: Maybe<KeyNotation>;
+  visibility?: Maybe<Scalars["Boolean"]>;
+  updateClipNames?: Maybe<Scalars["Boolean"]>;
+  updateClipColors?: Maybe<Scalars["Boolean"]>;
   masterTempo?: Maybe<Scalars["Float"]>;
+};
+
+export type AbletonLiveState = {
+  controls: AbletonLiveControls;
 };
 
 export type AudioFile = {
@@ -24,7 +32,7 @@ export enum CacheControlScope {
   Private = "PRIVATE"
 }
 
-export enum ChordNotation {
+export enum KeyNotation {
   Traditional = "TRADITIONAL",
   Camelot = "CAMELOT",
   Openkey = "OPENKEY"
@@ -44,7 +52,7 @@ export type Metadata = {
 };
 
 export type MetadataMusicalKeyArgs = {
-  notation: ChordNotation;
+  notation: KeyNotation;
 };
 
 export type MetadataFieldArgs = {
@@ -78,6 +86,9 @@ import {
 } from "graphql";
 
 export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+
+export type WithIndex<TObject> = TObject & Record<string, any>;
+export type ResolversObject<TObject> = WithIndex<TObject>;
 
 export type ResolverFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
@@ -147,22 +158,23 @@ export type DirectiveResolverFn<
 ) => TResult | Promise<TResult>;
 
 /** Mapping between all available schema types and the resolvers types */
-export type ResolversTypes = {
+export type ResolversTypes = ResolversObject<{
   Query: {};
   String: Scalars["String"];
   AudioFile: AudioFile;
   ID: Scalars["ID"];
   Metadata: Metadata;
-  ChordNotation: ChordNotation;
+  KeyNotation: KeyNotation;
   Float: Scalars["Float"];
   RawMetadata: RawMetadata;
   AbletonLiveState: AbletonLiveState;
-  Subscription: {};
+  AbletonLiveControls: AbletonLiveControls;
   Boolean: Scalars["Boolean"];
+  Subscription: {};
   CacheControlScope: CacheControlScope;
   Upload: Scalars["Upload"];
   Int: Scalars["Int"];
-};
+}>;
 
 export type CacheControlDirectiveResolver<
   Result,
@@ -174,33 +186,64 @@ export type CacheControlDirectiveResolver<
   }
 > = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
-export type AbletonLiveStateResolvers<
+export type AbletonLiveControlsResolvers<
   ContextType = any,
-  ParentType = ResolversTypes["AbletonLiveState"]
-> = {
+  ParentType = ResolversTypes["AbletonLiveControls"]
+> = ResolversObject<{
+  keyNotation?: Resolver<
+    Maybe<ResolversTypes["KeyNotation"]>,
+    ParentType,
+    ContextType
+  >;
+  visibility?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  updateClipNames?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  updateClipColors?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
   masterTempo?: Resolver<
     Maybe<ResolversTypes["Float"]>,
     ParentType,
     ContextType
   >;
-};
+}>;
+
+export type AbletonLiveStateResolvers<
+  ContextType = any,
+  ParentType = ResolversTypes["AbletonLiveState"]
+> = ResolversObject<{
+  controls?: Resolver<
+    ResolversTypes["AbletonLiveControls"],
+    ParentType,
+    ContextType
+  >;
+}>;
 
 export type AudioFileResolvers<
   ContextType = any,
   ParentType = ResolversTypes["AudioFile"]
-> = {
+> = ResolversObject<{
   path?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   metadata?: Resolver<
     Maybe<ResolversTypes["Metadata"]>,
     ParentType,
     ContextType
   >;
-};
+}>;
 
 export type MetadataResolvers<
   ContextType = any,
   ParentType = ResolversTypes["Metadata"]
-> = {
+> = ResolversObject<{
   title?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   artist?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   musicalKey?: Resolver<
@@ -225,12 +268,12 @@ export type MetadataResolvers<
     ContextType,
     MetadataFieldArgs
   >;
-};
+}>;
 
 export type QueryResolvers<
   ContextType = any,
   ParentType = ResolversTypes["Query"]
-> = {
+> = ResolversObject<{
   hello?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   audioFile?: Resolver<
     Maybe<ResolversTypes["AudioFile"]>,
@@ -243,20 +286,20 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
-};
+}>;
 
 export type RawMetadataResolvers<
   ContextType = any,
   ParentType = ResolversTypes["RawMetadata"]
-> = {
+> = ResolversObject<{
   key?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   value?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-};
+}>;
 
 export type SubscriptionResolvers<
   ContextType = any,
   ParentType = ResolversTypes["Subscription"]
-> = {
+> = ResolversObject<{
   helloAdded?: SubscriptionResolver<
     Maybe<ResolversTypes["String"]>,
     ParentType,
@@ -267,14 +310,15 @@ export type SubscriptionResolvers<
     ParentType,
     ContextType
   >;
-};
+}>;
 
 export interface UploadScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["Upload"], any> {
   name: "Upload";
 }
 
-export type Resolvers<ContextType = any> = {
+export type Resolvers<ContextType = any> = ResolversObject<{
+  AbletonLiveControls?: AbletonLiveControlsResolvers<ContextType>;
   AbletonLiveState?: AbletonLiveStateResolvers<ContextType>;
   AudioFile?: AudioFileResolvers<ContextType>;
   Metadata?: MetadataResolvers<ContextType>;
@@ -282,16 +326,16 @@ export type Resolvers<ContextType = any> = {
   RawMetadata?: RawMetadataResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   Upload?: GraphQLScalarType;
-};
+}>;
 
 /**
  * @deprecated
  * Use "Resolvers" root object instead. If you wish to get "IResolvers", add "typesPrefix: I" to your config.
  */
 export type IResolvers<ContextType = any> = Resolvers<ContextType>;
-export type DirectiveResolvers<ContextType = any> = {
+export type DirectiveResolvers<ContextType = any> = ResolversObject<{
   cacheControl?: CacheControlDirectiveResolver<any, any, ContextType>;
-};
+}>;
 
 /**
  * @deprecated
