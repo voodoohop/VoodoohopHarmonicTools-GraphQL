@@ -14,7 +14,7 @@ const LIVE_STATE_CHANGED = 'LIVE_STATE_CHANGED';
 import {getKeyFormatter} from "./keyformatter";
 import extractRelevantMetadata from './extractRelevantMetadata';
 
-import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe, AbletonLiveState, AbletonLiveControls, KeyNotation, AbletonLiveClip, AbletonLiveClips} from "./@types/generatedTypes";
+import {QueryResolvers, MetadataResolvers, Resolvers, AudioFile, SubscriptionResolvers, RawMetadata, Maybe, AbletonLiveState, AbletonLiveControls, KeyNotation, AbletonLiveClip} from "./@types/generatedTypes";
 
 // Construct a schema, using GraphQL schema language
 const typeDefs = gql`
@@ -58,18 +58,17 @@ const typeDefs = gql`
 
     
     type AbletonLiveClip {
+        track: ID!
         name: String
         filepath: String
+        playingPosition: Float
+        pitch: Float
     }
 
-    type AbletonLiveClips {
-        playing: [AbletonLiveClip!]
-        selected: AbletonLiveClip!
-    }
 
     type AbletonLiveState {
         controls: AbletonLiveControls!
-        clips: AbletonLiveClips
+        clips: [AbletonLiveClip!]!
     }
 
     type Query {
@@ -83,8 +82,6 @@ const typeDefs = gql`
         liveState: AbletonLiveState  
     }
 `;
-
-let abletonStateStore:AbletonLiveState = {controls:{}, clips:{playing:[], selected:{}}};
 
 const audioMetadataLoader = new DataLoader<string, IAudioMetadata>(function(path:string[]):Promise<IAudioMetadata[]> {
     // console.log("I got", path); 
@@ -100,8 +97,7 @@ const queryResolvers:QueryResolvers = {
         console.log("returning fields",metadata);   
         const result:AudioFile = {path, metadata};   
         return result;
-    },
-    live: ():AbletonLiveState => abletonStateStore
+    }
   }
 
 const metadataResolvers:MetadataResolvers = {
@@ -181,20 +177,22 @@ function controlMessageToState({key,value}: VoodoohopControlMessage):Maybe<Ablet
     return null;
 }
 
-function clipMessageToState({key, value}: VoodoohopTrackClipMessage): Maybe<AbletonLiveClip> {
+function clipMessageToState({key, value, track}: VoodoohopTrackClipMessage): Maybe<AbletonLiveClip> {
     if (key === "name")
-        return {name: value as string};
+        return {name: value as string, track};
     if (key === "file_path")
-        return {filepath: value as string};    
+        return {filepath: value as string, track};    
+    if (key === "playingPosition")
+        return {playingPosition: value as number, track};   
     return null;
 }
 
-import {assocPath} from "ramda";
+import {assocPath, adjust} from "ramda";
 
 async function startOSCServer() {
 
     const oscInput$= await getOscInputStream();
-    console.log("got input stream",oscInput$);
+    // console.log("got input stream",oscInput$);
    
     const controlMessage$:Stream<VoodoohopControlMessage> = oscInput$
         .filter(({type}) => type === VoodooMessageTypes.CONTROL)
@@ -208,36 +206,38 @@ async function startOSCServer() {
     const clipMessage$:Stream<VoodoohopTrackClipMessage> = oscInput$
         .filter(({type}) => type === VoodooMessageTypes.TRACK)
         .map(m => m as VoodoohopTrackClipMessage);
-    // assocPath()
 
-    const clipsState$:Stream<AbletonLiveClips> = clipMessage$
-    .map(message => ({clipStateFragment: clipMessageToState(message), message}))
-    .filter(({clipStateFragment}) => clipStateFragment !== null)
-    .scan((state: AbletonLiveClips, {clipStateFragment, message}) => {
-        if (message.clip === VoodoohopClipIdentifier.SELECTED)
-            return {...state, selected: {...state.selected, ...clipStateFragment}};
+
+    const clipsState$:Stream<AbletonLiveClip[]> = clipMessage$
+        .map(clipMessageToState)
+        .filter(s => s !== null).map(m => m as AbletonLiveClip)
+        .scan((state: AbletonLiveClip[], clipStateFragment) => {
+
+            const targetClip:Maybe<AbletonLiveClip> = state.find(({track}) => track === clipStateFragment.track) || null;
         
-        if (message.clip === VoodoohopClipIdentifier.PLAYING)
-            return {...state, playing: state.playing[message.track]};
-        return state;
-     },{playing:[],selected:{}});
+            if (targetClip === null)
+                return [...state, clipStateFragment];
+            else {
+                const targetClipIndex = state.indexOf(targetClip);
+                return adjust(targetClipIndex, (clipState) => ({...clipState, ...clipStateFragment}), state)
+            }
+        },[]);
 
-
-    // function updateAbletonLiveClips({clip, track, key, value}: VoodoohopTrackClipMessage):(string|number)[] {
-    //     if (clip === VoodoohopClipIdentifier.SELECTED) {
-
-    //     }
-    // }
-    
-
+        const state$:Stream<AbletonLiveState> = combine((controlState, clipState) => ({controls: controlState, clips:clipState}), controlState$, clipsState$);
    
-        oscInput$.observe((m:any) => console.log(m));
-    
-    controlState$.observe((m:any) => console.log(m));
+        // controlState$.observe((m:any) => console.log(m));
+        
+
+
+        state$.observe(m => pubsub.publish(LIVE_STATE_CHANGED, m));
+
+        
+        state$.observe((m:any) => console.log(m));
+        
 }
 // console.log("inputstreams",, oscOutput);
 startOSCServer();
 
-import {just, Stream} from 'most';
+import {just, Stream, combine} from 'most';
 
 addOscOutputStream(just({address: "/sendAll", data:null}))
